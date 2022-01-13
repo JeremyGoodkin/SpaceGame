@@ -8,7 +8,9 @@ public class PlayerMovement : MonoBehaviour
     public float playerSpeed = 3f;
     public float jumpHeight = 7f;
     private bool inAir = true;
+    private bool canLatch;
     private float jumpCharger;
+    private bool jumpPressed;
     private bool jumpDischarge;
     private float horizontal;
     private float vertical;
@@ -21,14 +23,30 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        vertical = Input.GetAxis("Vertical");
+        vertical = Input.GetAxis("Jump");
         horizontal = Input.GetAxis("Horizontal");
+        if (jumpCharger == 0)
+        {
+            gameObject.GetComponent<SpriteRenderer>().color = Color.white;
+        }
+        else if (jumpCharger < 1f && vertical > 0)
+        {
+            gameObject.GetComponent<SpriteRenderer>().color = Color.red;
+        }
+        else if (jumpCharger < 2f)
+        {
+            gameObject.GetComponent<SpriteRenderer>().color = Color.yellow;
+        }
+        else
+        {
+            gameObject.GetComponent<SpriteRenderer>().color = Color.green;
+        }
 
-        if (horizontal > 0)
+        if ((horizontal > 0 && vertical == 0) || (horizontal > 0 && inAir))
         {
             mRB.velocity = new Vector3(playerSpeed, mRB.velocity.y);
         }
-        else if (horizontal < 0)
+        else if ((horizontal < 0 && vertical == 0) || (horizontal < 0 && inAir))
         {
             mRB.velocity = new Vector3(-playerSpeed, mRB.velocity.y);
         }
@@ -37,19 +55,21 @@ public class PlayerMovement : MonoBehaviour
             mRB.velocity = new Vector3(mRB.velocity.x, mRB.velocity.y);
         }
 
-        if (Input.GetKey(KeyCode.LeftControl))
+        if (vertical > 0 && !inAir)
         {
             jumpCharger += Time.deltaTime;
+            jumpPressed = true;
         }
 
-        if (Input.GetKeyUp(KeyCode.LeftControl))
-        {
-            jumpCharger = 0f;
-        }
-
-        if (vertical > 0 && inAir == false)
+        if (vertical == 0 && jumpPressed && !inAir)
         {
             jumpDischarge = true;
+        }
+
+        if (Input.GetKeyDown(KeyCode.S) && canLatch)
+        {
+            mRB.gravityScale = 0.05f;
+            mRB.velocity = Vector2.zero;
         }
         
 
@@ -59,7 +79,11 @@ public class PlayerMovement : MonoBehaviour
     {
         if (jumpDischarge)
         {
-            if (jumpCharger <= 2f)
+            if (jumpCharger <= 1f)
+            {
+                mRB.velocity = new Vector3(mRB.velocity.x, jumpHeight * 0.5f);
+            }
+            else if (jumpCharger <= 2f)
             {
                 mRB.velocity = new Vector3(mRB.velocity.x, jumpHeight);
             }
@@ -70,6 +94,7 @@ public class PlayerMovement : MonoBehaviour
 
             jumpDischarge = false;
             jumpCharger = 0f;
+            jumpPressed = false;
             inAir = true;
 
         }
@@ -82,6 +107,25 @@ public class PlayerMovement : MonoBehaviour
         if (collision.gameObject.name == "Floor")
         {
             inAir = false;
+            mRB.gravityScale = 0.6f;
+        }
+
+        if (collision.gameObject.name == "Wall")
+        {
+            canLatch = true;
+        }
+
+        
+       
+    }
+
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.name == "Wall")
+        {
+            mRB.gravityScale = 0.6f;
+            canLatch = false;
         }
     }
 }

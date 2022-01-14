@@ -63,13 +63,13 @@ public class PlayerMovement : MonoBehaviour
         {
             if (isLatched)
             {
-                if (GameObject.Find("Wall").transform.position.x - transform.position.x < 0)
+                if (GameObject.Find("Wall").transform.position.x - transform.position.x < 0 && horizontal >= 0)
                 {
-                    mRB.velocity = new Vector3(mRB.velocity.x + 2 + horizontal, jumpHeight * 0.75f + vertical);
+                    mRB.velocity = new Vector3(mRB.velocity.x + 2 + horizontal, jumpHeight * 0.75f + (vertical * 2f));
                 }
-                else if (GameObject.Find("Wall").transform.position.x - transform.position.x > 0)
+                else if (GameObject.Find("Wall").transform.position.x - transform.position.x > 0 && horizontal <= 0)
                 {
-                    mRB.velocity = new Vector3(mRB.velocity.x - 2 + horizontal, jumpHeight * 0.75f + vertical);
+                    mRB.velocity = new Vector3(mRB.velocity.x - 2 + horizontal, jumpHeight * 0.75f + (vertical * 2f));
                 }
                 
                 isLatched = false;

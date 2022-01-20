@@ -56,23 +56,25 @@ public class PlayerMovement : MonoBehaviour
         }
         else
         {
-            mRB.velocity = new Vector3(mRB.velocity.x * 0.75f, mRB.velocity.y);
+            mRB.velocity = new Vector3(0, mRB.velocity.y);
         }
 
         if (jump > 0 && (!inAir || isLatched))
         {
             if (isLatched)
             {
-                if (GameObject.Find("Wall").transform.position.x - transform.position.x < 0 && horizontal >= 0)
+                if (GameObject.Find("Wall").transform.position.x - transform.position.x < 0 && horizontal > 0)
                 {
-                    mRB.velocity = new Vector3(mRB.velocity.x + 2 + horizontal, jumpHeight * 0.75f + (vertical * 2f));
+                    mRB.velocity = new Vector3(mRB.velocity.x + 2 + horizontal, jumpHeight * 0.75f + (vertical * 1.5f));
+                    isLatched = false;
                 }
-                else if (GameObject.Find("Wall").transform.position.x - transform.position.x > 0 && horizontal <= 0)
+                else if (GameObject.Find("Wall").transform.position.x - transform.position.x > 0 && horizontal < 0)
                 {
-                    mRB.velocity = new Vector3(mRB.velocity.x - 2 + horizontal, jumpHeight * 0.75f + (vertical * 2f));
+                    mRB.velocity = new Vector3(mRB.velocity.x - 2 + horizontal, jumpHeight * 0.75f + (vertical * 1.5f));
+                    isLatched = false;
                 }
                 
-                isLatched = false;
+                
             }
             else
             {
@@ -130,7 +132,11 @@ public class PlayerMovement : MonoBehaviour
 
         }
         
-        
+        if (isLatched && mRB.velocity.y > 0)
+        {
+            mRB.velocity = Vector2.zero;
+        }
+
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

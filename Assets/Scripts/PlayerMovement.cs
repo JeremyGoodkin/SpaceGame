@@ -29,6 +29,7 @@ public class PlayerMovement : MonoBehaviour
         horizontal = Input.GetAxis("Horizontal");
         vertical = Input.GetAxis("Vertical");
 
+        //Color control
         if (jumpCharger == 0)
         {
             gameObject.GetComponent<SpriteRenderer>().color = Color.white;
@@ -46,6 +47,7 @@ public class PlayerMovement : MonoBehaviour
             gameObject.GetComponent<SpriteRenderer>().color = Color.green;
         }
 
+        //Left and right movement
         if (((horizontal > 0 && jump == 0) || (horizontal > 0 && inAir)) && !isLatched)
         {
             mRB.velocity = new Vector3(playerSpeed, mRB.velocity.y);
@@ -59,10 +61,13 @@ public class PlayerMovement : MonoBehaviour
             mRB.velocity = new Vector3(0, mRB.velocity.y);
         }
 
+        //Jump behavior
         if (jump > 0 && (!inAir || isLatched))
         {
             if (isLatched)
             {
+                /*Checking the position of the wall against the position of the player allows for us to know which side of the wall
+                the player is on*/
                 if (GameObject.Find("Wall").transform.position.x - transform.position.x < 0 && horizontal > 0)
                 {
                     mRB.velocity = new Vector3(mRB.velocity.x + 2 + horizontal, jumpHeight * 0.75f + (vertical * 1.5f));
@@ -74,9 +79,8 @@ public class PlayerMovement : MonoBehaviour
                     isLatched = false;
                 }
                 
-                
             }
-            else
+            else //Allows for charge jump when not latched
             {
                 jumpCharger += Time.deltaTime;
                 jumpPressed = true;
@@ -84,11 +88,13 @@ public class PlayerMovement : MonoBehaviour
             
         }
 
+        //Sets off FixedUpdate
         if (jump == 0 && jumpPressed && !inAir)
         {
             jumpDischarge = true;
         }
 
+        //Latch behavior
         if (Input.GetKeyDown(KeyCode.S) && canLatch)
         {
             if (isLatched)
@@ -110,8 +116,10 @@ public class PlayerMovement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        //Jumps and resets variables
         if (jumpDischarge)
         {
+            //Charge jump values
             if (jumpCharger <= 1f)
             {
                 mRB.velocity = new Vector3(mRB.velocity.x, jumpHeight * 0.5f);
@@ -132,6 +140,7 @@ public class PlayerMovement : MonoBehaviour
 
         }
         
+        //Fixes bug where you can launch off wall and can't move left/right
         if (isLatched && mRB.velocity.y > 0)
         {
             mRB.velocity = Vector2.zero;
@@ -141,6 +150,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
+        //Controls collision behaviors
         if (collision.gameObject.name == "Floor")
         {
             inAir = false;
@@ -160,6 +170,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionExit2D(Collision2D collision)
     {
+        //Makes sure to reset grav scale when you leave wall
         if (collision.gameObject.name == "Wall")
         {
             mRB.gravityScale = 0.6f;

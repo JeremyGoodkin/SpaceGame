@@ -26,7 +26,7 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         jump = Input.GetAxis("Jump");
-        horizontal = Input.GetAxis("Horizontal");
+        horizontal = Input.GetAxisRaw("Horizontal");
         vertical = Input.GetAxis("Vertical");
 
         //Color control
@@ -48,18 +48,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         //Left and right movement
-        if (((horizontal > 0 && jump == 0) || (horizontal > 0 && inAir)) && !isLatched)
-        {
-            mRB.velocity = new Vector3(playerSpeed, mRB.velocity.y);
-        }
-        else if (((horizontal < 0 && jump == 0) || (horizontal < 0 && inAir)) && !isLatched)
-        {
-            mRB.velocity = new Vector3(-playerSpeed, mRB.velocity.y);
-        }
-        else
-        {
-            mRB.velocity = new Vector3(0, mRB.velocity.y);
-        }
+        mRB.velocity = new Vector2(horizontal * playerSpeed * System.Convert.ToInt32((jump == 0 || inAir) && !isLatched), mRB.velocity.y);
 
         //Jump behavior
         if (jump > 0 && (!inAir || isLatched))

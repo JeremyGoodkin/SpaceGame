@@ -20,6 +20,7 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         mRB = gameObject.GetComponent<Rigidbody2D>();
+
     }
 
     // Update is called once per frame
@@ -55,14 +56,18 @@ public class PlayerMovement : MonoBehaviour
         {
             if (isLatched)
             {
-                /*Checking the position of the wall against the position of the player allows for us to know which side of the wall
-                the player is on*/
-                if (GameObject.Find("Wall").transform.position.x - transform.position.x < 0 && horizontal > 0)
+                //RayCast to figure out which side of the wall player latched to
+                Ray2D leftRay = new Ray2D(transform.position, Vector2.left);
+                RaycastHit2D leftHit = Physics2D.Raycast(leftRay.origin, leftRay.direction, 0.55f);
+                Ray2D rightRay = new Ray2D(transform.position, Vector2.right);
+                RaycastHit2D rightHit = Physics2D.Raycast(rightRay.origin, rightRay.direction, 0.55f);
+
+                if (rightHit.collider != null && horizontal < 0)
                 {
                     mRB.velocity = new Vector3(mRB.velocity.x + 2 + horizontal, jumpHeight * 0.75f + (vertical * 1.5f));
                     isLatched = false;
                 }
-                else if (GameObject.Find("Wall").transform.position.x - transform.position.x > 0 && horizontal < 0)
+                else if (leftHit.collider != null && horizontal > 0)
                 {
                     mRB.velocity = new Vector3(mRB.velocity.x - 2 + horizontal, jumpHeight * 0.75f + (vertical * 1.5f));
                     isLatched = false;
@@ -84,23 +89,41 @@ public class PlayerMovement : MonoBehaviour
         }
 
         //Latch behavior
-        if (Input.GetKeyDown(KeyCode.S) && canLatch)
+        if (Input.GetKeyDown(KeyCode.S))
         {
+            
             if (isLatched)
             {
                 isLatched = false;
                 mRB.gravityScale = 0.6f;
+                canLatch = true;
             }
-            else
+            else if (canLatch)
             {
                 isLatched = true;
-                mRB.gravityScale = 0.05f;
+                mRB.gravityScale = 0.0f;
                 mRB.velocity = Vector2.zero;
             }
             
         }
         
+        if (mRB.velocity.y != 0)
+        {
+            inAir = true;
+        }
+        else
+        {
+            inAir = false;
+        }
 
+        if (inAir)
+        {
+            mRB.gravityScale = 0.6f;
+        }
+        else
+        {
+            canLatch = false;
+        }
     }
 
     private void FixedUpdate()
@@ -135,35 +158,17 @@ public class PlayerMovement : MonoBehaviour
             mRB.velocity = Vector2.zero;
         }
 
+        
+
     }
+
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        //Controls collision behaviors
-        if (collision.gameObject.name == "Floor")
-        {
-            inAir = false;
-            isLatched = false;
-            mRB.gravityScale = 0.6f;
-        }
-
-        if (collision.gameObject.name == "Wall")
+        if (inAir)
         {
             canLatch = true;
         }
 
-        
-       
-    }
-
-
-    private void OnCollisionExit2D(Collision2D collision)
-    {
-        //Makes sure to reset grav scale when you leave wall
-        if (collision.gameObject.name == "Wall")
-        {
-            mRB.gravityScale = 0.6f;
-            canLatch = false;
-        }
     }
 }

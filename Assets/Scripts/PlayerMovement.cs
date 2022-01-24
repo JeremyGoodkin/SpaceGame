@@ -1,169 +1,197 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public Rigidbody2D mRB;
-    public float playerSpeed = 3f;
-    public float jumpHeight = 7f;
-    private bool inAir = true;
-    private bool canLatch;
-    private bool isLatched;
-    private float jumpCharger;
-    private bool jumpPressed;
-    private bool jumpDischarge;
-    private float horizontal;
-    private float jump;
-    private float vertical;
-    // Start is called before the first frame update
+    Rigidbody2D rb;
+    BoxCollider2D col;
+
+    public float groundSpeed = 10;
+    public float airSpeed = 5;
+    float momentum; // used for acceleration-based air movement
+
+    [Tooltip("How many units the player can jump at max charge")]
+    public float maxJumpHeight = 10;
+    [Tooltip("How long in seconds the max charge takes")]
+    public float maxJumpChargeTime = 1;
+    [Tooltip("The largest angle the player can jump from the wall.\n0 is straight forward, 90 is straight up/down.")]
+    public float maxJumpAngle = 45;
+
+    public LayerMask levelLayer;
+    bool grounded;  // touching ground
+    bool latchable; // touching wall
+    public float latchDistance = 0.1f;
+
+    public KeyCode jumpKeyCode = KeyCode.Space;
+    bool jumpButtonPressed; // controller jump input
+    bool jumpPressed;       // keyboard jump input + controller jump input
+    float jumpChargeTimer;
+
     void Start()
     {
-        mRB = gameObject.GetComponent<Rigidbody2D>();
+        rb = GetComponent<Rigidbody2D>();
+        col = GetComponent<BoxCollider2D>();
     }
 
-    // Update is called once per frame
+
+    // controller input
+    // learned from https://www.youtube.com/watch?v=IurqiqduMVQ
+
+    PlayerControls controls;
+    Vector2 joystick; // joystick input
+    int joystickPressed; // bool for if their is currently joystick input
+
+    private void Awake()
+    {
+        controls = new PlayerControls();
+
+        controls.Gameplay.Movement.performed += ctx =>
+        {
+            //Debug.Log(ctx.ReadValue<Vector2>());
+            joystick = ctx.ReadValue<Vector2>();
+            joystickPressed = 1;
+        };
+        controls.Gameplay.Movement.canceled += ctx => joystickPressed = 0;
+
+        controls.Gameplay.Jump.performed += ctx => jumpButtonPressed = true;
+        controls.Gameplay.Jump.canceled += ctx => jumpButtonPressed = false;
+    }
+
+    private void OnEnable()
+    {
+        controls.Gameplay.Enable();
+    }
+
+    private void OnDisable()
+    {
+        controls.Gameplay.Disable();
+    }
+
+
     void Update()
     {
-        jump = Input.GetAxis("Jump");
-        horizontal = Input.GetAxisRaw("Horizontal");
-        vertical = Input.GetAxis("Vertical");
+        float maxVelocity = Mathf.Sqrt(maxJumpHeight * -2 * rb.gravityScale * Physics2D.gravity.y); // equation for the velocity to reach a certain height
 
-        //Color control
-        if (jumpCharger == 0)
-        {
-            gameObject.GetComponent<SpriteRenderer>().color = Color.white;
-        }
-        else if (jumpCharger < 1f && jump > 0)
-        {
-            gameObject.GetComponent<SpriteRenderer>().color = Color.red;
-        }
-        else if (jumpCharger < 2f)
-        {
-            gameObject.GetComponent<SpriteRenderer>().color = Color.yellow;
-        }
-        else
-        {
-            gameObject.GetComponent<SpriteRenderer>().color = Color.green;
-        }
+        grounded = BoxCastDraw(col.bounds.center + Vector3.down * col.bounds.extents.y, new Vector2(col.bounds.size.x, 0.4f), 0, Vector2.down, 0.2f, levelLayer).collider != null;
+        latchable = LatchCheck(1) || LatchCheck(-1);
+        jumpPressed = jumpButtonPressed || Input.GetKey(jumpKeyCode);
 
-        //Left and right movement
-        mRB.velocity = new Vector2(horizontal * playerSpeed * System.Convert.ToInt32((jump == 0 || inAir) && !isLatched), mRB.velocity.y);
 
-        //Jump behavior
-        if (jump > 0 && (!inAir || isLatched))
+        // horizontal movement
+        float horizontalInput = (joystick.x * joystickPressed + Input.GetAxisRaw("Horizontal") * (1 - joystickPressed)) // allows joystick input to trump keyboard input
+                              * System.Convert.ToInt32(!(jumpPressed && (grounded || latchable))); // lock movement when charging a jump
+
+        momentum = grounded ? horizontalInput * groundSpeed : Mathf.Clamp(momentum + horizontalInput * airSpeed * Time.deltaTime, -maxVelocity, maxVelocity);
+
+        rb.velocity = new Vector2(grounded ? horizontalInput * groundSpeed : momentum, rb.velocity.y);
+
+
+        // jumping
+        if (jumpPressed && (grounded || latchable))
         {
-            if (isLatched)
-            {
-                /*Checking the position of the wall against the position of the player allows for us to know which side of the wall
-                the player is on*/
-                if (GameObject.Find("Wall").transform.position.x - transform.position.x < 0 && horizontal > 0)
-                {
-                    mRB.velocity = new Vector3(mRB.velocity.x + 2 + horizontal, jumpHeight * 0.75f + (vertical * 1.5f));
-                    isLatched = false;
-                }
-                else if (GameObject.Find("Wall").transform.position.x - transform.position.x > 0 && horizontal < 0)
-                {
-                    mRB.velocity = new Vector3(mRB.velocity.x - 2 + horizontal, jumpHeight * 0.75f + (vertical * 1.5f));
-                    isLatched = false;
-                }
-                
-            }
-            else //Allows for charge jump when not latched
-            {
-                jumpCharger += Time.deltaTime;
-                jumpPressed = true;
-            }
-            
+            jumpChargeTimer += Time.deltaTime;
+        }
+        else if (jumpChargeTimer != 0 && (grounded || latchable))
+        {
+            rb.velocity = ((latchable && !grounded)
+                                       ? jumpAngleClamp(joystick, maxJumpAngle) // this function keeps the jump direction within a certain range (also called clamping)
+                                       : (joystick.normalized * joystickPressed + Vector2.up * (1 - joystickPressed))) // defaults to up if no directional input
+                                     * Mathf.Clamp(jumpChargeTimer, 0, maxJumpChargeTime) / maxJumpChargeTime // provides a percent of the max charge time reached
+                                     * maxVelocity;
+            momentum = rb.velocity.x;
         }
 
-        //Sets off FixedUpdate
-        if (jump == 0 && jumpPressed && !inAir)
-        {
-            jumpDischarge = true;
-        }
+        if (!jumpPressed) jumpChargeTimer = 0;
 
-        //Latch behavior
-        if (Input.GetKeyDown(KeyCode.S) && canLatch)
-        {
-            if (isLatched)
-            {
-                isLatched = false;
-                mRB.gravityScale = 0.6f;
-            }
-            else
-            {
-                isLatched = true;
-                mRB.gravityScale = 0.05f;
-                mRB.velocity = Vector2.zero;
-            }
-            
-        }
-        
+        if ((grounded && rb.velocity.y < 0) || LatchCheck((int)Mathf.Sign(momentum))) // reset jump momentum if landed or touching wall
+            momentum = 0;
 
+        rb.constraints = RigidbodyConstraints2D.FreezeRotation | // if latchable and holding jump, freeze y position
+                         (latchable && jumpPressed ? RigidbodyConstraints2D.FreezePositionY : RigidbodyConstraints2D.None);
+
+
+        if (Input.GetKeyDown(KeyCode.Return)) // scene reset dev tool
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    private void FixedUpdate()
+    Vector2 jumpAngleClamp(Vector2 inputDir, float maxAngle)
     {
-        //Jumps and resets variables
-        if (jumpDischarge)
-        {
-            //Charge jump values
-            if (jumpCharger <= 1f)
-            {
-                mRB.velocity = new Vector3(mRB.velocity.x, jumpHeight * 0.5f);
-            }
-            else if (jumpCharger <= 2f)
-            {
-                mRB.velocity = new Vector3(mRB.velocity.x, jumpHeight);
-            }
-            else
-            {
-                mRB.velocity = new Vector3(mRB.velocity.x, jumpHeight * 1.5f);
-            }
-
-            jumpDischarge = false;
-            jumpCharger = 0f;
-            jumpPressed = false;
-            inAir = true;
-
-        }
-        
-        //Fixes bug where you can launch off wall and can't move left/right
-        if (isLatched && mRB.velocity.y > 0)
-        {
-            mRB.velocity = Vector2.zero;
-        }
-
+        int jumpableDir = System.Convert.ToInt32(LatchCheck(-1)) * 2 - 1; // detects if wall is left/right facing
+        float clampedAngle = Mathf.Clamp(Vector2.SignedAngle(Vector2.right, inputDir * jumpableDir), -maxAngle, maxAngle); // converts to angle and clamps it
+        return new Vector2(Mathf.Cos(clampedAngle * Mathf.Deg2Rad), Mathf.Sin(clampedAngle * Mathf.Deg2Rad)) * jumpableDir; // converts back to vector
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    bool LatchCheck(int dir)
     {
-        //Controls collision behaviors
-        if (collision.gameObject.name == "Floor")
-        {
-            inAir = false;
-            isLatched = false;
-            mRB.gravityScale = 0.6f;
-        }
-
-        if (collision.gameObject.name == "Wall")
-        {
-            canLatch = true;
-        }
-
-        
-       
+        return BoxCastDraw(transform.position, col.bounds.size / 2, 0, dir * Vector2.right, latchDistance + col.bounds.size.x / 4, levelLayer).collider != null;
     }
 
 
-    private void OnCollisionExit2D(Collision2D collision)
+    // debug tools
+
+    RaycastHit2D RayCastDraw(Vector2 origin, Vector2 direction, float distance, LayerMask mask)
     {
-        //Makes sure to reset grav scale when you leave wall
-        if (collision.gameObject.name == "Wall")
+        Debug.DrawLine(origin, origin + direction * distance);
+        return Physics2D.Raycast(origin, direction, distance, mask);
+    }
+
+    RaycastHit2D BoxCastDraw(Vector2 origin, Vector2 size, float angle, Vector2 direction, float distance, LayerMask mask)
+    {
+        // from https://forum.unity.com/threads/visualize-a-2d-boxcast-with-this-simple-wrapper-method.415356/
+
+        RaycastHit2D hit = Physics2D.BoxCast(origin, size, angle, direction, distance, mask);
+
+        //Setting up the points to draw the cast
+        Vector2 p1, p2, p3, p4, p5, p6, p7, p8;
+        float w = size.x * 0.5f;
+        float h = size.y * 0.5f;
+        p1 = new Vector2(-w, h);
+        p2 = new Vector2(w, h);
+        p3 = new Vector2(w, -h);
+        p4 = new Vector2(-w, -h);
+
+        Quaternion q = Quaternion.AngleAxis(angle, new Vector3(0, 0, 1));
+        p1 = q * p1;
+        p2 = q * p2;
+        p3 = q * p3;
+        p4 = q * p4;
+
+        p1 += origin;
+        p2 += origin;
+        p3 += origin;
+        p4 += origin;
+
+        Vector2 realDistance = direction.normalized * distance;
+        p5 = p1 + realDistance;
+        p6 = p2 + realDistance;
+        p7 = p3 + realDistance;
+        p8 = p4 + realDistance;
+
+
+        //Drawing the cast
+        Color castColor = hit ? Color.red : Color.green;
+        Debug.DrawLine(p1, p2, castColor);
+        Debug.DrawLine(p2, p3, castColor);
+        Debug.DrawLine(p3, p4, castColor);
+        Debug.DrawLine(p4, p1, castColor);
+
+        Debug.DrawLine(p5, p6, castColor);
+        Debug.DrawLine(p6, p7, castColor);
+        Debug.DrawLine(p7, p8, castColor);
+        Debug.DrawLine(p8, p5, castColor);
+
+        Debug.DrawLine(p1, p5, Color.grey);
+        Debug.DrawLine(p2, p6, Color.grey);
+        Debug.DrawLine(p3, p7, Color.grey);
+        Debug.DrawLine(p4, p8, Color.grey);
+        if (hit)
         {
-            mRB.gravityScale = 0.6f;
-            canLatch = false;
+            Debug.DrawLine(hit.point, hit.point + hit.normal.normalized * 0.2f, Color.yellow);
         }
+
+        return hit;
     }
 }

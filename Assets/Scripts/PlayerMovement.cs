@@ -20,7 +20,6 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         mRB = gameObject.GetComponent<Rigidbody2D>();
-
     }
 
     // Update is called once per frame
@@ -157,8 +156,6 @@ public class PlayerMovement : MonoBehaviour
         {
             mRB.velocity = Vector2.zero;
         }
-
-        
 
     }
 

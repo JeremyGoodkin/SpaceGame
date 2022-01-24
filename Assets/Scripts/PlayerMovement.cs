@@ -8,6 +8,7 @@ public class PlayerMovement : MonoBehaviour
 {
     Rigidbody2D rb;
     BoxCollider2D col;
+    Animator anim;
 
     public float groundSpeed = 10;
     public float airSpeed = 5;
@@ -36,6 +37,7 @@ public class PlayerMovement : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<BoxCollider2D>();
+        anim = GetComponent<Animator>();
     }
 
 
@@ -80,6 +82,7 @@ public class PlayerMovement : MonoBehaviour
         latchable = LatchCheck(1) || LatchCheck(-1);
         jumpPressed = jumpButtonPressed || Input.GetKey(jumpKeyCode);
 
+        
 
         // horizontal movement
         float horizontalInput = (joystick.x * joystickPressed + Input.GetAxisRaw("Horizontal") * (1 - joystickPressed)) // allows joystick input to trump keyboard input

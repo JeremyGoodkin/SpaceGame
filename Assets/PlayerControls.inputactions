@@ -47,6 +47,17 @@
                 },
                 {
                     "name": "",
+                    "id": "8cc95604-8950-4f4e-aeb4-23c11f39a4d2",
+                    "path": "<XInputController>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Xbox Conrol Scheme",
+                    "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "ead9a03b-64ce-4fd9-9508-5a6d322762df",
                     "path": "<Joystick>/stick",
                     "interactions": "",
@@ -55,9 +66,32 @@
                     "action": "Movement",
                     "isComposite": false,
                     "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "10cc4284-f573-4de4-ba19-664fa6db3968",
+                    "path": "<XInputController>/leftStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Xbox Conrol Scheme",
+                    "action": "Movement",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }
     ],
-    "controlSchemes": []
+    "controlSchemes": [
+        {
+            "name": "Xbox Conrol Scheme",
+            "bindingGroup": "Xbox Conrol Scheme",
+            "devices": [
+                {
+                    "devicePath": "<XInputController>",
+                    "isOptional": false,
+                    "isOR": false
+                }
+            ]
+        }
+    ]
 }

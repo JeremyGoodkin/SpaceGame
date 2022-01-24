@@ -24,15 +24,20 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask levelLayer;
     bool grounded;  // touching ground
     bool latchable; // touching wall
+    [Tooltip("How close to a wall the player must be to be able to latch.")]
     public float latchDistance = 0.1f;
+    [Tooltip("How close to the ground the player must be to be considered grounded.")]
+    public float groundedDistance = 0.1f;
 
     public KeyCode jumpKeyCode = KeyCode.Space;
     bool jumpButtonPressed; // controller jump input
     bool jumpPressed;       // keyboard jump input + controller jump input
     float jumpChargeTimer;
 
+    string currentAnimation;
+    string newAnimation;
 
-    // Start is called before the first frame update
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -78,7 +83,7 @@ public class PlayerMovement : MonoBehaviour
     {
         float maxVelocity = Mathf.Sqrt(maxJumpHeight * -2 * rb.gravityScale * Physics2D.gravity.y); // equation for the velocity to reach a certain height
 
-        grounded = BoxCastDraw(col.bounds.center + Vector3.down * col.bounds.extents.y, new Vector2(col.bounds.size.x, 0.4f), 0, Vector2.down, 0.2f, levelLayer).collider != null;
+        grounded = BoxCastDraw(col.bounds.center + Vector3.down * col.bounds.extents.y, new Vector2(col.bounds.size.x, groundedDistance * 2), 0, Vector2.down, groundedDistance, levelLayer).collider != null;
         latchable = LatchCheck(1) || LatchCheck(-1);
         jumpPressed = jumpButtonPressed || Input.GetKey(jumpKeyCode);
 
@@ -87,34 +92,46 @@ public class PlayerMovement : MonoBehaviour
         // horizontal movement
         float horizontalInput = (joystick.x * joystickPressed + Input.GetAxisRaw("Horizontal") * (1 - joystickPressed)) // allows joystick input to trump keyboard input
                               * System.Convert.ToInt32(!(jumpPressed && (grounded || latchable))); // lock movement when charging a jump
+        if (horizontalInput != 0) transform.localScale = new Vector3(Mathf.Sign(horizontalInput), 1, 1);
 
         momentum = grounded ? horizontalInput * groundSpeed : Mathf.Clamp(momentum + horizontalInput * airSpeed * Time.deltaTime, -maxVelocity, maxVelocity);
 
         rb.velocity = new Vector2(grounded ? horizontalInput * groundSpeed : momentum, rb.velocity.y);
+
+        if (grounded && horizontalInput != 0) newAnimation = "PlayerRun";
+        else newAnimation = "PlayerIdle";
 
 
         // jumping
         if (jumpPressed && (grounded || latchable))
         {
             jumpChargeTimer += Time.deltaTime;
+            newAnimation = "PlayerCrouch" + Mathf.Ceil(3 * Mathf.Min(jumpChargeTimer / maxJumpChargeTime, 1));
         }
+
         else if (jumpChargeTimer != 0 && (grounded || latchable))
         {
-            rb.velocity = ((latchable && !grounded)
-                                       ? jumpAngleClamp(joystick, maxJumpAngle) // this function keeps the jump direction within a certain range (also called clamping)
-                                       : (joystick.normalized * joystickPressed + Vector2.up * (1 - joystickPressed))) // defaults to up if no directional input
-                                     * Mathf.Clamp(jumpChargeTimer, 0, maxJumpChargeTime) / maxJumpChargeTime // provides a percent of the max charge time reached
-                                     * maxVelocity;
+            Vector2 jumpDir = joystick.normalized * joystickPressed + Vector2.up * (1 - joystickPressed); // defaults to up if no directional input
+
+            if (latchable && !grounded) jumpDir = jumpAngleClamp(jumpDir, maxJumpAngle); // this function keeps the jump direction within a certain range (also called clamping)
+
+            rb.velocity = jumpDir * maxVelocity * Mathf.Clamp(jumpChargeTimer, 0, maxJumpChargeTime) / maxJumpChargeTime; // provides a percent of the max charge time reached
+
             momentum = rb.velocity.x;
         }
 
         if (!jumpPressed) jumpChargeTimer = 0;
 
-        if ((grounded && rb.velocity.y < 0) || LatchCheck((int)Mathf.Sign(momentum))) // reset jump momentum if landed or touching wall
-            momentum = 0;
+        if (LatchCheck((int)Mathf.Sign(momentum))) momentum = 0; // reset jump momentum if bumping a wall
 
         rb.constraints = RigidbodyConstraints2D.FreezeRotation | // if latchable and holding jump, freeze y position
                          (latchable && jumpPressed ? RigidbodyConstraints2D.FreezePositionY : RigidbodyConstraints2D.None);
+
+
+        // animation
+        // learned from https://www.youtube.com/watch?v=nBkiSJ5z-hE&t=540s
+        if (currentAnimation != newAnimation) anim.Play(newAnimation);
+        currentAnimation = newAnimation;
 
 
         if (Input.GetKeyDown(KeyCode.Return)) // scene reset dev tool
@@ -132,7 +149,6 @@ public class PlayerMovement : MonoBehaviour
     {
         return BoxCastDraw(transform.position, col.bounds.size / 2, 0, dir * Vector2.right, latchDistance + col.bounds.size.x / 4, levelLayer).collider != null;
     }
-
 
     // debug tools
 

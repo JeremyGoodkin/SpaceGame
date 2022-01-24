@@ -30,6 +30,8 @@ public class PlayerMovement : MonoBehaviour
     bool jumpPressed;       // keyboard jump input + controller jump input
     float jumpChargeTimer;
 
+
+    // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -69,7 +71,6 @@ public class PlayerMovement : MonoBehaviour
     {
         controls.Gameplay.Disable();
     }
-
 
     void Update()
     {

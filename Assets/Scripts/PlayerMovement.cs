@@ -7,7 +7,9 @@ public class PlayerMovement : MonoBehaviour
     public Rigidbody2D mRB;
     public float playerSpeed = 3f;
     public float jumpHeight = 7f;
+    [SerializeField]
     private bool inAir = true;
+    [SerializeField]
     private bool canLatch;
     private bool isLatched;
     private float jumpCharger;
@@ -160,12 +162,18 @@ public class PlayerMovement : MonoBehaviour
     }
 
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void OnCollisionStay2D(Collision2D collision)
     {
-        if (inAir)
+        Ray2D leftRay = new Ray2D(transform.position, Vector2.left);
+        RaycastHit2D leftHit = Physics2D.Raycast(leftRay.origin, leftRay.direction, 0.55f);
+        Ray2D rightRay = new Ray2D(transform.position, Vector2.right);
+        RaycastHit2D rightHit = Physics2D.Raycast(rightRay.origin, rightRay.direction, 0.55f);
+
+        if (rightHit.collider != null || leftHit.collider != null)
         {
             canLatch = true;
         }
-
     }
+
+
 }

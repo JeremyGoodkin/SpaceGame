@@ -60,6 +60,17 @@ public class @PlayerControls : IInputActionCollection, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""8cc95604-8950-4f4e-aeb4-23c11f39a4d2"",
+                    ""path"": ""<XInputController>/buttonSouth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Xbox Conrol Scheme"",
+                    ""action"": ""Jump"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""ead9a03b-64ce-4fd9-9508-5a6d322762df"",
                     ""path"": ""<Joystick>/stick"",
                     ""interactions"": """",
@@ -68,11 +79,34 @@ public class @PlayerControls : IInputActionCollection, IDisposable
                     ""action"": ""Movement"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""10cc4284-f573-4de4-ba19-664fa6db3968"",
+                    ""path"": ""<XInputController>/leftStick"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Xbox Conrol Scheme"",
+                    ""action"": ""Movement"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
     ],
-    ""controlSchemes"": []
+    ""controlSchemes"": [
+        {
+            ""name"": ""Xbox Conrol Scheme"",
+            ""bindingGroup"": ""Xbox Conrol Scheme"",
+            ""devices"": [
+                {
+                    ""devicePath"": ""<XInputController>"",
+                    ""isOptional"": false,
+                    ""isOR"": false
+                }
+            ]
+        }
+    ]
 }");
         // Gameplay
         m_Gameplay = asset.FindActionMap("Gameplay", throwIfNotFound: true);
@@ -164,6 +198,15 @@ public class @PlayerControls : IInputActionCollection, IDisposable
         }
     }
     public GameplayActions @Gameplay => new GameplayActions(this);
+    private int m_XboxConrolSchemeSchemeIndex = -1;
+    public InputControlScheme XboxConrolSchemeScheme
+    {
+        get
+        {
+            if (m_XboxConrolSchemeSchemeIndex == -1) m_XboxConrolSchemeSchemeIndex = asset.FindControlSchemeIndex("Xbox Conrol Scheme");
+            return asset.controlSchemes[m_XboxConrolSchemeSchemeIndex];
+        }
+    }
     public interface IGameplayActions
     {
         void OnJump(InputAction.CallbackContext context);

@@ -98,17 +98,11 @@ public class PlayerMovement : MonoBehaviour
 
         rb.velocity = new Vector2(grounded ? horizontalInput * groundSpeed : momentum, rb.velocity.y);
 
-        if (grounded && horizontalInput != 0) newAnimation = "PlayerRun";
-        else newAnimation = "PlayerIdle";
-
 
         // jumping
         if (jumpPressed && (grounded || latchable))
-        {
             jumpChargeTimer += Time.deltaTime;
-            newAnimation = "PlayerCrouch" + Mathf.Ceil(3 * Mathf.Min(jumpChargeTimer / maxJumpChargeTime, 1));
-        }
-
+        
         else if (jumpChargeTimer != 0 && (grounded || latchable))
         {
             Vector2 jumpDir = joystick.normalized * joystickPressed + Vector2.up * (1 - joystickPressed); // defaults to up if no directional input
@@ -120,7 +114,7 @@ public class PlayerMovement : MonoBehaviour
             momentum = rb.velocity.x;
         }
 
-        if (!jumpPressed) jumpChargeTimer = 0;
+        if (!jumpPressed && jumpChargeTimer != 0) jumpChargeTimer = 0;
 
         if (LatchCheck((int)Mathf.Sign(momentum))) momentum = 0; // reset jump momentum if bumping a wall
 
@@ -130,6 +124,13 @@ public class PlayerMovement : MonoBehaviour
 
         // animation
         // learned from https://www.youtube.com/watch?v=nBkiSJ5z-hE&t=540s
+
+        if (jumpPressed && (grounded || latchable)) newAnimation = "PlayerCrouch" + Mathf.Ceil(3 * Mathf.Min(jumpChargeTimer / maxJumpChargeTime, 1));
+        else if (grounded && horizontalInput != 0) newAnimation = "PlayerRun";
+        else if (grounded && rb.velocity.y == 0) newAnimation = "PlayerIdle";
+        else if (!jumpPressed && jumpChargeTimer != 0) newAnimation = "PlayerJump";
+        else if (currentAnimation != "PlayerJump" && !grounded) newAnimation = "PlayerAir";
+
         if (currentAnimation != newAnimation) anim.Play(newAnimation);
         currentAnimation = newAnimation;
 

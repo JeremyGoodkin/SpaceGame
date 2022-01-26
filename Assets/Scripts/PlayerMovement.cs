@@ -34,6 +34,9 @@ public class PlayerMovement : MonoBehaviour
     bool jumpPressed;       // keyboard jump input + controller jump input
     float jumpChargeTimer;
 
+    public GameObject arrowPrefab;
+    GameObject arrowObject;
+
     string currentAnimation;
     string newAnimation;
 
@@ -43,6 +46,10 @@ public class PlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<BoxCollider2D>();
         anim = GetComponent<Animator>();
+
+        arrowObject = Instantiate(arrowPrefab);
+        arrowObject.transform.parent = gameObject.transform;
+        arrowObject.GetComponent<SpriteRenderer>().enabled = false;
     }
 
 
@@ -133,6 +140,25 @@ public class PlayerMovement : MonoBehaviour
 
         if (currentAnimation != newAnimation) anim.Play(newAnimation);
         currentAnimation = newAnimation;
+
+
+        // aiming arrow
+        if (jumpPressed & (grounded || latchable))
+        {
+            Vector2 jumpDir = joystick.normalized * joystickPressed + Vector2.up * (1 - joystickPressed);
+            if (latchable && !grounded) jumpDir = jumpAngleClamp(jumpDir, maxJumpAngle);
+
+            jumpDir = new Vector2(-jumpDir.x * -transform.localScale.x, jumpDir.y);
+            arrowObject.transform.localPosition = jumpDir * 3;
+
+            jumpDir = new Vector2(jumpDir.x * -transform.localScale.x, jumpDir.y);
+            arrowObject.transform.eulerAngles = new Vector3(0, 0, 90 + Vector2.SignedAngle(jumpDir, Vector2.right));
+
+
+            arrowObject.GetComponent<SpriteRenderer>().enabled = true;
+        }
+        else arrowObject.GetComponent<SpriteRenderer>().enabled = false;
+
 
 
         if (Input.GetKeyDown(KeyCode.Return)) // scene reset dev tool

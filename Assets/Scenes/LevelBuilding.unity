@@ -3204,13 +3204,14 @@ MonoBehaviour:
   airSpeed: 10
   maxJumpHeight: 10
   maxJumpChargeTime: 1
-  maxJumpAngle: 60
+  maxJumpAngle: 45
   levelLayer:
     serializedVersion: 2
     m_Bits: 256
   latchDistance: 0.1
   groundedDistance: 0.1
   jumpKeyCode: 32
+  arrowPrefab: {fileID: 9029132234645885476, guid: 7eaca2ecbbde8457ca8943939c9eb243, type: 3}
 --- !u!61 &1870926541
 BoxCollider2D:
   m_ObjectHideFlags: 0

@@ -6,6 +6,7 @@ TagManager:
   tags:
   - ground
   - nextLine
+  - spike
   layers:
   - Default
   - TransparentFX

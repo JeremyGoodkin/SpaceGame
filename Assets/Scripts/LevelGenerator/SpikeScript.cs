@@ -18,5 +18,9 @@ public class SpikeScript : MonoBehaviour
         {
             spikeGenerator.generateSpike();
         }
+        if (collision.gameObject.CompareTag("Finish"))
+        {
+            Destroy(this.gameObject);
+        }
     }
 }

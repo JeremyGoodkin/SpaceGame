@@ -174,7 +174,7 @@ public class PlayerMovement : MonoBehaviour
 
     bool LatchCheck(int dir)
     {
-        return BoxCastDraw(transform.position, col.bounds.size / 2, 0, dir * Vector2.right, latchDistance + col.bounds.size.x / 4, levelLayer).collider != null;
+        return BoxCastDraw(col.bounds.center, col.bounds.size / 2, 0, dir * Vector2.right, latchDistance + col.bounds.size.x / 4, levelLayer).collider != null;
     }
 
     // debug tools

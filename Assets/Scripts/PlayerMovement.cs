@@ -21,7 +21,8 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("The largest angle the player can jump from the wall.\n0 is straight forward, 90 is straight up/down.")]
     public float maxJumpAngle = 45;
 
-    public LayerMask levelLayer;
+    public LayerMask floorLayer;
+    public LayerMask wallLayer;
     bool grounded;  // touching ground
     bool latchable; // touching wall
     [Tooltip("How close to a wall the player must be to be able to latch.")]
@@ -90,7 +91,7 @@ public class PlayerMovement : MonoBehaviour
     {
         float maxVelocity = Mathf.Sqrt(maxJumpHeight * -2 * rb.gravityScale * Physics2D.gravity.y); // equation for the velocity to reach a certain height
 
-        grounded = BoxCastDraw(col.bounds.center + Vector3.down * col.bounds.extents.y, new Vector2(col.bounds.size.x, groundedDistance * 2), 0, Vector2.down, groundedDistance, levelLayer).collider != null;
+        grounded = BoxCastDraw(col.bounds.center + Vector3.down * col.bounds.extents.y, new Vector2(col.bounds.size.x, groundedDistance * 2), 0, Vector2.down, groundedDistance, floorLayer).collider != null;
         latchable = LatchCheck(1) || LatchCheck(-1);
         jumpPressed = jumpButtonPressed || Input.GetKey(jumpKeyCode);
 
@@ -174,7 +175,7 @@ public class PlayerMovement : MonoBehaviour
 
     bool LatchCheck(int dir)
     {
-        return BoxCastDraw(col.bounds.center, col.bounds.size / 2, 0, dir * Vector2.right, latchDistance + col.bounds.size.x / 4, levelLayer).collider != null;
+        return BoxCastDraw(col.bounds.center, col.bounds.size / 2, 0, dir * Vector2.right, latchDistance + col.bounds.size.x / 4, wallLayer).collider != null;
     }
 
     // debug tools
